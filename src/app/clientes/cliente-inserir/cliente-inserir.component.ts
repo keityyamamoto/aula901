@@ -1,8 +1,11 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { NgForm } from '@angular/forms';
+import { FormControl, FormGroup, NgForm, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { Cliente } from '../cliente.model';
 import { ClienteService } from '../cliente.service';
+import { mimeTypeValidator } from './mime-type.validator';
+
+
 @Component({
 selector: 'app-cliente-inserir',
 templateUrl: './cliente-inserir.component.html',
@@ -12,49 +15,95 @@ export class ClienteInserirComponent implements OnInit {
   private modo: string = "criar";
   private idCliente: string = null;
   public cliente: Cliente;
+  public estaCarregando: boolean = false;
+  form: FormGroup;
+  previewImagem: string;
 
   constructor(public clienteService: ClienteService,
     public route: ActivatedRoute){}
 
   ngOnInit(): void {
+    this.form = new FormGroup({
+      nome: new FormControl (null, {
+      validators: [Validators.required, Validators.minLength(3)]
+      }),
+      fone: new FormControl (null, {
+      validators: [Validators.required]
+      }),
+      email: new FormControl (null, {
+      validators: [Validators.required, Validators.email]
+      }),
+      imagem: new FormControl(null, {
+        validators: [Validators.required],
+        asyncValidators: [mimeTypeValidator]
+        })
+      })
+
     this.route.paramMap.subscribe((paramMap: ParamMap) => {
       if (paramMap.has("idCliente")){
          this.modo = "editar";
           this.idCliente = paramMap.get("idCliente");
           //this.cliente = this.clienteService.getCliente(this.idCliente);
+          this.estaCarregando = true;
           this.clienteService.getCliente(this.idCliente).subscribe( dadosCli => {
+            this.estaCarregando = false;
             this.cliente = {
             id: dadosCli._id,
             nome: dadosCli.nome,
             fone: dadosCli.fone,
-            email: dadosCli.email
+            email: dadosCli.email,
+            imagemURL: null
             };
+            this.form.setValue({
+              nome: this.cliente.nome,
+              fone: this.cliente.fone,
+              email: this.cliente.email
+              })
             });
       }
       });
   }
 
-  onAdicionarCliente(form: NgForm) {
+  onSalvarCliente() {
 
-    if (form.invalid) {
+    if (this.form.invalid) {
       return;
     }
+    this.estaCarregando = true;
+
     if (this.modo === "criar"){
       this.clienteService.adicionarCliente(
-      form.value.nome,
-      form.value.fone,
-      form.value.email
+        this.form.value.nome,
+        this.form.value.fone,
+        this.form.value.email,
+        this.form.value.imagem
       );
       }
       else{
         this.clienteService.atualizarCliente(
         this.idCliente,
-        form.value.nome,
-        form.value.fone,
-        form.value.email
+        this.form.value.nome,
+        this.form.value.fone,
+        this.form.value.email
         )
         }
 
-    form.resetForm();
+        this.form.reset();
    }
+
+  onImagemSelecionada (event: Event){
+    const arquivo = (event.target as HTMLInputElement).files[0];
+    this.form.patchValue({'imagem': arquivo});
+    this.form.get('imagem').updateValueAndValidity();
+    const reader = new FileReader();
+    reader.readAsDataURL(arquivo);
+    reader.onload = () => {
+    this.previewImagem = reader.result as string;
+    }
+
+
+    console.log(arquivo);
+console.log(this.form);
+  }
+
 }

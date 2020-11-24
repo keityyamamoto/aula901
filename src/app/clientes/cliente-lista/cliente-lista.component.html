@@ -1,8 +1,13 @@
-<mat-accordion *ngIf="clientes.length > 0">
-  <mat-expansion-panel *ngFor="let cliente of clientes">
+<mat-spinner *ngIf="estaCarregando"></mat-spinner>
+<mat-accordion *ngIf="clientes.length > 0 && !estaCarregando">  <mat-expansion-panel *ngFor="let cliente of clientes">
   <mat-expansion-panel-header
-  >Nome: {{ cliente.nome }}</mat-expansion-panel-header
-  ><p>Fone: {{ cliente.fone }}</p>
+  >Nome: {{ cliente.nome }}</mat-expansion-panel-header>
+
+  <div class="cliente-imagem">
+    <img [src]="cliente.imagemURL" [alt]="cliente.nome">
+    </div>
+
+  <p>Fone: {{ cliente.fone }}</p>
   <hr/>
   <p>Email: {{ cliente.email }}</p>
 
@@ -14,6 +19,6 @@
   </mat-expansion-panel>
   </mat-accordion>
 
-  <p class="mat-body-1" style="text-align: center;" *ngIf="clientes.length <= 0">
-    Nenhum cliente cadastrado
+  <p class="mat-body-1" style="text-align: center;" *ngIf="clientes.length <= 0 && !
+  estaCarregando">    Nenhum cliente cadastrado
     </p>
